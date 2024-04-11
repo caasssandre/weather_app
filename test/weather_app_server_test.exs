@@ -4,8 +4,6 @@ defmodule WeatherAppServerTest do
 
   alias WeatherApp.Server
 
-  doctest WeatherApp.Server
-
   setup :set_mimic_global
 
   describe "city_temp/2" do
