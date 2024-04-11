@@ -24,9 +24,17 @@ defmodule WeatherApp.Server do
           {:reply, {:error, :invalid_json | :unknown_error} | {:ok, binary()}, any()}
   def handle_call({:city, city}, _from, _state) do
     case show_city_temp(city) do
-      {:ok, temp} -> {:reply, {:ok, temp}, []}
-      {:error, :bad_request, reason} -> {:reply, {:error, :bad_request, reason}, []}
-      {:error, reason} -> {:reply, {:error, reason}, []}
+      {:ok, temp} ->
+        {:reply, {:ok, temp}, []}
+
+      {:error, :bad_request, reason} ->
+        {:reply, {:error, :bad_request, reason}, []}
+
+      {:error, :invalid_request_format} ->
+        {:reply, {:error, :invalid_request_format}, []}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, []}
     end
   end
 

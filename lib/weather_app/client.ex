@@ -34,6 +34,10 @@ defmodule WeatherApp.Client do
         IO.puts("The JSON returned from the API was malformed")
         System.halt(0)
 
+      {:error, :invalid_request_format} ->
+        IO.puts("Invalid request format.")
+        System.halt(0)
+
       {:error, _} ->
         IO.puts("Unknown error #{city}.")
         System.halt(0)
