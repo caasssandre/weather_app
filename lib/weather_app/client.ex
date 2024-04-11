@@ -35,7 +35,7 @@ defmodule WeatherApp.Client do
         System.halt(0)
 
       {:error, _} ->
-        IO.puts("There was an error getting the temperature for #{city}. ")
+        IO.puts("Unknown error #{city}.")
         System.halt(0)
     end
   end

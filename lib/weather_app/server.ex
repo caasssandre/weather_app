@@ -25,7 +25,7 @@ defmodule WeatherApp.Server do
   def handle_call({:city, city}, _from, _state) do
     case show_city_temp(city) do
       {:ok, temp} -> {:reply, {:ok, temp}, []}
-      {:error, :bad_request, reason} -> {:reply, {:error, reason}, []}
+      {:error, :bad_request, reason} -> {:reply, {:error, :bad_request, reason}, []}
       {:error, reason} -> {:reply, {:error, reason}, []}
     end
   end
