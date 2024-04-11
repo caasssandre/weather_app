@@ -5,7 +5,7 @@ defmodule WeatherApp.Server do
   This server receives a call with a city and returns {:ok, temp} or {:error, reason}
   """
 
-  @spec start_link(any()) :: :ignore | {:error, any()} | {:ok, pid()}
+  @spec start_link(name: binary()) :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link(opts) do
     GenServer.start_link(__MODULE__, nil, opts)
   end
