@@ -25,7 +25,7 @@ defmodule WeatherApp.MixProject do
       {:finch, "~> 0.18.0"},
       {:jason, "~> 1.4"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:mimic, "~> 1.7", only: [:test], runtime: false},
+      {:mimic, "~> 1.7", only: [:test]},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
 
       # {:dep_from_hexpm, "~> 0.3.0"},

@@ -9,8 +9,8 @@ defmodule WeatherApp.Application do
   def start(_type, _args) do
     children = [
       {Finch, name: WeatherApp.Finch},
-      WeatherApp.Server,
-      {WeatherApp.Client, name: __MODULE__}
+      {WeatherApp.Server, name: WeatherApp.Server},
+      WeatherApp.Client
       # Starts a worker by calling: WeatherApp.Worker.start_link(arg)
       # {WeatherApp.Worker, arg}
     ]

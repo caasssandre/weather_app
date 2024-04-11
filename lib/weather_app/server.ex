@@ -6,8 +6,8 @@ defmodule WeatherApp.Server do
   """
 
   @spec start_link(any()) :: :ignore | {:error, any()} | {:ok, pid()}
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  def start_link(opts) do
+    GenServer.start_link(__MODULE__, nil, opts)
   end
 
   @spec city_temp(binary()) :: any()
@@ -61,7 +61,7 @@ defmodule WeatherApp.Server do
       {:error, :bad_request, reason} -> {:error, :bad_request, reason}
       {:error, %Mint.HTTPError{}} -> {:error, :invalid_request_format}
       {:error, %Jason.DecodeError{}} -> {:error, :invalid_json}
-      :error -> {:error, :unknown_error}
+      _ -> {:error, :unknown_error}
     end
   end
 end
