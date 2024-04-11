@@ -25,6 +25,7 @@ defmodule WeatherApp.Server do
   def handle_call({:city, city}, _from, _state) do
     case show_city_temp(city) do
       {:ok, temp} -> {:reply, {:ok, temp}, []}
+      {:error, :bad_request, reason} -> {:reply, {:error, reason}, []}
       {:error, reason} -> {:reply, {:error, reason}, []}
     end
   end
@@ -36,7 +37,7 @@ defmodule WeatherApp.Server do
       Finch.build(
         :get,
         "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/" <>
-          city <>
+          String.replace(city, " ", "_") <>
           "?unitGroup=metric&include=current&key=" <>
           api_key <>
           "&contentType=json"
@@ -49,6 +50,8 @@ defmodule WeatherApp.Server do
       {:ok, temp}
     else
       {:ok, %{status: _, body: body}} -> {:error, :bad_request, body}
+      {:error, :bad_request, reason} -> {:error, :bad_request, reason}
+      {:error, %Mint.HTTPError{}} -> {:error, :invalid_request_format}
       {:error, %Jason.DecodeError{}} -> {:error, :invalid_json}
       :error -> {:error, :unknown_error}
     end
