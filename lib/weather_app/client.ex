@@ -2,9 +2,6 @@ defmodule WeatherApp.Client do
   use Task
   alias WeatherApp.Server
 
-  # @repeat_frequency_in_ms 600_000
-  @repeat_frequency_in_ms 2_000
-
   @moduledoc """
   This console UI takes a city name input from a user and prints the current
   temperature for that city every 10 minutes.
@@ -18,32 +15,42 @@ defmodule WeatherApp.Client do
   defp ask_for_city_input() do
     IO.gets("Enter a city name\n")
     |> String.trim()
-    |> request_city_temp_and_display()
+    |> Server.city_temp()
+    |> loop()
   end
 
-  defp request_city_temp_and_display(city) do
-    case Server.city_temp(city) do
-      {:ok, temp} ->
-        IO.puts("At #{human_readable_time()}, it was #{temp} degrees celsius in #{city}")
+  def loop({:city, city}) do
+    receive do
+      {:city_temp, resp} ->
+        case handle_response_for_display(resp, city) do
+          {:ok, display_text} ->
+            IO.puts(display_text)
 
-        :timer.sleep(@repeat_frequency_in_ms)
-        request_city_temp_and_display(city)
+          {:error, display_text} ->
+            IO.puts(display_text)
+            System.halt(0)
+        end
+
+        loop({:city, city})
+    end
+  end
+
+  defp handle_response_for_display(resp, city) do
+    case resp do
+      {:ok, temp} ->
+        {:ok, "At #{human_readable_time()}, it was #{temp} degrees celsius in #{city}"}
 
       {:error, :bad_request, reason} ->
-        IO.puts("The request was not formed correctly " <> reason)
-        System.halt(0)
+        {:error, "The request was not formed correctly " <> reason}
 
       {:error, :invalid_json} ->
-        IO.puts("The JSON returned from the API was malformed")
-        System.halt(0)
+        {:error, "The JSON returned from the API was malformed"}
 
       {:error, :invalid_request_format} ->
-        IO.puts("Invalid request format.")
-        System.halt(0)
+        {:error, "Invalid request format."}
 
       {:error, _} ->
-        IO.puts("Unknown error #{city}.")
-        System.halt(0)
+        {:error, "Unknown error #{city}."}
     end
   end
 

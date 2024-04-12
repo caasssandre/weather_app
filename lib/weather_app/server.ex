@@ -1,5 +1,6 @@
 defmodule WeatherApp.Server do
   use GenServer
+  @repeat_frequency_in_ms 20_000
 
   @moduledoc """
   This server receives a call with a city and returns {:ok, temp} or {:error, reason}
@@ -20,22 +21,20 @@ defmodule WeatherApp.Server do
   def init(_opts), do: {:ok, []}
 
   @impl GenServer
-  @spec handle_call({:city, binary()}, any(), any()) ::
-          {:reply, {:error, :invalid_json | :unknown_error} | {:ok, binary()}, any()}
-  def handle_call({:city, city}, _from, _state) do
-    case request_city_temp_and_analyse_response(city) do
-      {:ok, temp} ->
-        {:reply, {:ok, temp}, []}
+  # @spec handle_call({:city, binary()}, any(), any()) ::
+  #         {:reply, {:error, :invalid_json | :unknown_error} | {:ok, binary()}, any()}
+  def handle_call({:city, city}, {client_pid, _alias}, _state) do
+    Process.send(client_pid, {:city_temp, request_city_temp_and_analyse_response(city)}, [])
+    Process.send_after(self(), %{city: city, client_pid: client_pid}, @repeat_frequency_in_ms)
+    {:reply, {:city, city}, []}
+  end
 
-      {:error, :bad_request, reason} ->
-        {:reply, {:error, :bad_request, reason}, []}
+  @impl GenServer
+  def handle_info(%{city: city, client_pid: client_pid}, _state) do
+    Process.send(client_pid, {:city_temp, request_city_temp_and_analyse_response(city)}, [])
+    Process.send_after(self(), %{city: city, client_pid: client_pid}, @repeat_frequency_in_ms)
 
-      {:error, :invalid_request_format} ->
-        {:reply, {:error, :invalid_request_format}, []}
-
-      {:error, reason} ->
-        {:reply, {:error, reason}, []}
-    end
+    {:noreply, []}
   end
 
   defp request_city_temp_and_analyse_response(city) do
