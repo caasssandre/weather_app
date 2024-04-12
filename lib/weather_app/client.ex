@@ -3,8 +3,8 @@ defmodule WeatherApp.Client do
   alias WeatherApp.Server
 
   @moduledoc """
-  This console UI takes a city name input from a user and prints the current
-  temperature for that city every 10 minutes.
+  This console UI requests a city name from the user, send it to the server
+  and prints the temperature every time the server sends it.
   """
 
   @spec start_link(any()) :: {:ok, pid()}
@@ -38,7 +38,7 @@ defmodule WeatherApp.Client do
   defp handle_response_for_display(resp, city) do
     case resp do
       {:ok, temp} ->
-        {:ok, "At #{human_readable_time()}, it was #{temp} degrees celsius in #{city}"}
+        {:ok, "At #{human_readable_nz_time()}, it was #{temp} degrees celsius in #{city}"}
 
       {:error, :bad_request, reason} ->
         {:error, "The request was not formed correctly " <> reason}
@@ -54,7 +54,7 @@ defmodule WeatherApp.Client do
     end
   end
 
-  defp human_readable_time() do
+  defp human_readable_nz_time() do
     %{hour: hour, minute: minute} = DateTime.utc_now()
 
     nz_hour =

@@ -12,7 +12,7 @@ defmodule WeatherApp.Server do
     GenServer.start_link(__MODULE__, nil, opts)
   end
 
-  # @spec city_temp(binary()) :: any()
+  @spec city_temp(binary()) :: any()
   def city_temp(pid \\ __MODULE__, city) do
     GenServer.call(pid, {:city, city})
   end
