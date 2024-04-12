@@ -12,18 +12,16 @@ defmodule WeatherApp.Server do
     GenServer.start_link(__MODULE__, nil, opts)
   end
 
-  @spec city_temp(binary()) :: any()
+  # @spec city_temp(binary()) :: any()
   def city_temp(pid \\ __MODULE__, city) do
     GenServer.call(pid, {:city, city})
   end
 
   @impl GenServer
-  @spec init(any()) :: {:ok, []}
   def init(_opts), do: {:ok, []}
 
   @impl GenServer
-  @spec handle_call({:city, binary()}, {pid(), any()}, any()) ::
-          {:reply, {:city, binary()}, list()}
+  # move city to state
   def handle_call({:city, city}, {client_pid, _alias}, _state) do
     Process.send(client_pid, {:city_temp, request_city_temp_and_analyse_response(city)}, [])
     Process.send_after(self(), %{city: city, client_pid: client_pid}, @repeat_frequency_in_ms)
@@ -38,6 +36,7 @@ defmodule WeatherApp.Server do
     {:noreply, []}
   end
 
+  # use mise to load env file ?
   def request_city_temp_and_analyse_response(city) do
     request =
       Finch.build(

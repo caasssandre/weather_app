@@ -1,4 +1,4 @@
-defmodule WeatherAppServerTest do
+defmodule WeatherApp.ServerTest do
   use ExUnit.Case, async: false
   use Mimic
 
