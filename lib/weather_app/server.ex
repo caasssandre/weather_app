@@ -21,19 +21,27 @@ defmodule WeatherApp.Server do
   def init(_opts), do: {:ok, []}
 
   @impl GenServer
-  # move city to state
   def handle_call({:city, city}, {client_pid, _alias}, _state) do
-    Process.send(client_pid, {:city_temp, request_city_temp_and_analyse_response(city)}, [])
-    Process.send_after(self(), %{city: city, client_pid: client_pid}, @repeat_frequency_in_ms)
-    {:reply, {:city, city}, []}
+    Process.send(
+      client_pid,
+      request_city_temp_and_analyse_response(city),
+      []
+    )
+
+    Process.send_after(self(), [], @repeat_frequency_in_ms)
+    {:reply, {:ok, %{city: city}}, %{city: city, client_pid: client_pid}}
   end
 
   @impl GenServer
-  def handle_info(%{city: city, client_pid: client_pid}, _state) do
-    Process.send(client_pid, {:city_temp, request_city_temp_and_analyse_response(city)}, [])
-    Process.send_after(self(), %{city: city, client_pid: client_pid}, @repeat_frequency_in_ms)
+  def handle_info(_, %{client_pid: client_pid, city: city}) do
+    Process.send(
+      client_pid,
+      request_city_temp_and_analyse_response(city),
+      []
+    )
 
-    {:noreply, []}
+    Process.send_after(self(), [], @repeat_frequency_in_ms)
+    {:noreply, %{client_pid: client_pid, city: city}}
   end
 
   # use mise to load env file ?

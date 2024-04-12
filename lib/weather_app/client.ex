@@ -19,9 +19,9 @@ defmodule WeatherApp.Client do
     |> loop()
   end
 
-  def loop({:city, city}) do
+  def loop({:ok, %{city: city}}) do
     receive do
-      {:city_temp, resp} ->
+      resp ->
         case handle_response_for_display(resp, city) do
           {:ok, display_text} ->
             IO.puts(display_text)
@@ -31,7 +31,7 @@ defmodule WeatherApp.Client do
             System.halt(0)
         end
 
-        loop({:city, city})
+        loop({:ok, %{city: city}})
     end
   end
 
