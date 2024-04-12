@@ -6,7 +6,7 @@ defmodule WeatherAppServerTest do
 
   setup :set_mimic_global
 
-  describe "city_temp/2" do
+  describe "request_city_temp_and_analyse_response/1" do
     test "returns {:ok, temp} with a valid request" do
       expect(Finch, :request, fn _request, _server_name ->
         {:ok, %{status: 200, body: "{\"currentConditions\":{\"temp\":12.7}}"}}
@@ -15,7 +15,7 @@ defmodule WeatherAppServerTest do
       parent_pid = self()
 
       spawn_link(fn ->
-        assert {:ok, 12.7} = Server.city_temp("london")
+        assert {:ok, 12.7} = Server.request_city_temp_and_analyse_response("london")
 
         send(parent_pid, :ok)
       end)
@@ -32,7 +32,7 @@ defmodule WeatherAppServerTest do
 
       spawn_link(fn ->
         assert {:error, :bad_request, "Bad API Request:Invalid location parameter value."} =
-                 Server.city_temp("onlyletters")
+                 Server.request_city_temp_and_analyse_response("onlyletters")
 
         send(parent_pid, :ok)
       end)
@@ -49,7 +49,7 @@ defmodule WeatherAppServerTest do
 
       spawn_link(fn ->
         assert {:error, :invalid_request_format} =
-                 Server.city_temp("BadFormat")
+                 Server.request_city_temp_and_analyse_response("BadFormat")
 
         send(parent_pid, :ok)
       end)
@@ -66,7 +66,7 @@ defmodule WeatherAppServerTest do
 
       spawn_link(fn ->
         assert {:error, :invalid_json} =
-                 Server.city_temp("cityname")
+                 Server.request_city_temp_and_analyse_response("cityname")
 
         send(parent_pid, :ok)
       end)
@@ -84,7 +84,7 @@ defmodule WeatherAppServerTest do
 
       spawn_link(fn ->
         assert {:ok, 22.7} =
-                 Server.city_temp("New York")
+                 Server.request_city_temp_and_analyse_response("New York")
 
         send(parent_pid, :ok)
       end)

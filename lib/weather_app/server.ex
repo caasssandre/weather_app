@@ -1,9 +1,10 @@
 defmodule WeatherApp.Server do
   use GenServer
+  # @repeat_frequency_in_ms 60_000
   @repeat_frequency_in_ms 20_000
 
   @moduledoc """
-  This server receives a call with a city and returns {:ok, temp} or {:error, reason}
+  This server receives a call with a city and sends a response containing the temperature to the client every 10 minutes
   """
 
   @spec start_link(name: binary()) :: :ignore | {:error, any()} | {:ok, pid()}
@@ -21,8 +22,8 @@ defmodule WeatherApp.Server do
   def init(_opts), do: {:ok, []}
 
   @impl GenServer
-  # @spec handle_call({:city, binary()}, any(), any()) ::
-  #         {:reply, {:error, :invalid_json | :unknown_error} | {:ok, binary()}, any()}
+  @spec handle_call({:city, binary()}, {pid(), any()}, any()) ::
+          {:reply, {:city, binary()}, list()}
   def handle_call({:city, city}, {client_pid, _alias}, _state) do
     Process.send(client_pid, {:city_temp, request_city_temp_and_analyse_response(city)}, [])
     Process.send_after(self(), %{city: city, client_pid: client_pid}, @repeat_frequency_in_ms)
@@ -37,7 +38,7 @@ defmodule WeatherApp.Server do
     {:noreply, []}
   end
 
-  defp request_city_temp_and_analyse_response(city) do
+  def request_city_temp_and_analyse_response(city) do
     request =
       Finch.build(
         :get,
