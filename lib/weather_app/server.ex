@@ -7,6 +7,8 @@ defmodule WeatherApp.Server do
   use GenServer
   # @repeat_frequency_in_ms 60_000
   @repeat_frequency_in_ms 20_000
+  @weather_uri_host "weather.visualcrossing.com"
+  @weather_uri_path "/VisualCrossingWebServices/rest/services/timeline/"
 
   @spec start_link(name: binary()) :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link(opts) do
@@ -50,15 +52,9 @@ defmodule WeatherApp.Server do
     request =
       Finch.build(
         :get,
-        "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/" <>
-          String.replace(city, " ", "_") <>
-          "?unitGroup=metric&include=current&key=" <>
-          Application.fetch_env!(:weather_app, :api_key) <>
-          "&contentType=json"
+        build_uri(city)
       )
 
-    # URL base in module var, default params into module var as a map
-    # URI module
     with {:ok, %{status: 200, body: body}} <- Finch.request(request, WeatherApp.Finch),
          {:ok, json} <- Jason.decode(body),
          {:ok, conditions} <- Map.fetch(json, "currentConditions"),
@@ -71,5 +67,22 @@ defmodule WeatherApp.Server do
       {:error, %Jason.DecodeError{}} -> {:error, :invalid_json}
       unknown_error -> IO.inspect(unknown_error)
     end
+  end
+
+  defp build_uri(city) do
+    query = %{
+      unitGroup: "metric",
+      include: "current",
+      key: Application.fetch_env!(:weather_app, :api_key),
+      contentType: "json"
+    }
+
+    %URI{
+      scheme: "https",
+      host: @weather_uri_host,
+      path: @weather_uri_path <> URI.encode(city),
+      query: URI.encode_query(query)
+    }
+    |> URI.to_string()
   end
 end
