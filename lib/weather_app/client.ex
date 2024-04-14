@@ -12,39 +12,34 @@ defmodule WeatherApp.Client do
   end
 
   defp ask_for_city_input() do
-    server_response =
+    city =
       IO.gets("Enter a city name\n")
       |> String.trim()
-      |> Server.city_temp()
 
-    case server_response do
-      {:ok, %{city: city}} ->
-        loop({:ok, %{city: city}})
+    Process.send(
+      Server,
+      {:local_temperature, [client_pid: self(), city: city]},
+      []
+    )
 
-      {:error, _} ->
-        {:error}
-    end
-
-    loop(server_response)
+    loop(city)
   end
 
-  def loop({:ok, %{city: city}}) do
+  def loop(city) do
     receive do
-      resp ->
-        case render_response(resp, city) do
+      response ->
+        case render_response(response, city) do
           {:ok, display_text} ->
             IO.puts(display_text)
+            loop(city)
 
           {:error, display_text} ->
             IO.puts(display_text)
             System.halt(0)
         end
-
-        loop({:ok, %{city: city}})
     end
   end
 
-  # use multiple function iterations instead of case
   defp render_response({:ok, temp}, city),
     do: {:ok, "At #{human_readable_nz_time()}, it was #{temp} degrees celsius in #{city}"}
 

@@ -6,7 +6,7 @@ defmodule WeatherApp.Server do
 
   use GenServer
   # @repeat_frequency_in_ms 60_000
-  @repeat_frequency_in_ms 20_000
+  @repeat_frequency_in_ms 2_000
   @weather_uri_host "weather.visualcrossing.com"
   @weather_uri_path "/VisualCrossingWebServices/rest/services/timeline/"
 
@@ -15,39 +15,27 @@ defmodule WeatherApp.Server do
     GenServer.start_link(__MODULE__, nil, opts)
   end
 
-  @spec city_temp(binary()) :: any()
-  def city_temp(pid \\ __MODULE__, city) do
-    GenServer.call(pid, {:city, city})
-  end
-
   @impl GenServer
   def init(_opts), do: {:ok, []}
 
-  # handle call uses same name as function above
   @impl GenServer
-  def handle_call({:city, city}, {client_pid, _alias}, _state) do
+  def handle_info({:local_temperature, [client_pid: client_pid, city: city]}, []) do
     Process.send(
       client_pid,
       request_temperature(city),
       []
     )
 
-    Process.send_after(self(), [], @repeat_frequency_in_ms)
-    {:reply, {:ok, %{city: city}}, %{city: city, client_pid: client_pid}}
-  end
-
-  @impl GenServer
-  def handle_info(_, %{client_pid: client_pid, city: city}) do
-    Process.send(
-      client_pid,
-      request_temperature(city),
-      []
+    Process.send_after(
+      self(),
+      {:local_temperature, [client_pid: client_pid, city: city]},
+      @repeat_frequency_in_ms
     )
 
-    Process.send_after(self(), [], @repeat_frequency_in_ms)
-    {:noreply, %{client_pid: client_pid, city: city}}
+    {:noreply, []}
   end
 
+  # 8&^%yhg
   defp request_temperature(city) do
     request =
       Finch.build(
