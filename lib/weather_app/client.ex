@@ -1,11 +1,10 @@
 defmodule WeatherApp.Client do
-  use Task
-  alias WeatherApp.Server
-
   @moduledoc """
   This console UI requests a city name from the user, send it to the server
   and prints the temperature every time the server sends it.
   """
+  use Task
+  alias WeatherApp.Server
 
   @spec start_link(any()) :: {:ok, pid()}
   def start_link(_) do
@@ -13,16 +12,26 @@ defmodule WeatherApp.Client do
   end
 
   defp ask_for_city_input() do
-    IO.gets("Enter a city name\n")
-    |> String.trim()
-    |> Server.city_temp()
-    |> loop()
+    server_response =
+      IO.gets("Enter a city name\n")
+      |> String.trim()
+      |> Server.city_temp()
+
+    case server_response do
+      {:ok, %{city: city}} ->
+        loop({:ok, %{city: city}})
+
+      {:error, _} ->
+        {:error}
+    end
+
+    loop(server_response)
   end
 
   def loop({:ok, %{city: city}}) do
     receive do
       resp ->
-        case handle_response_for_display(resp, city) do
+        case render_response(resp, city) do
           {:ok, display_text} ->
             IO.puts(display_text)
 
@@ -35,42 +44,23 @@ defmodule WeatherApp.Client do
     end
   end
 
-  defp handle_response_for_display(resp, city) do
-    case resp do
-      {:ok, temp} ->
-        {:ok, "At #{human_readable_nz_time()}, it was #{temp} degrees celsius in #{city}"}
+  # use multiple function iterations instead of case
+  defp render_response({:ok, temp}, city),
+    do: {:ok, "At #{human_readable_nz_time()}, it was #{temp} degrees celsius in #{city}"}
 
-      {:error, :bad_request, reason} ->
-        {:error, "The request was not formed correctly " <> reason}
+  defp render_response({:error, :bad_request, reason}, _city),
+    do: {:error, "The request was not formed correctly " <> inspect(reason)}
 
-      {:error, :invalid_json} ->
-        {:error, "The JSON returned from the API was malformed"}
+  defp render_response({:error, :invalid_json}, _city),
+    do: {:error, "The JSON returned from the API was malformed"}
 
-      {:error, :invalid_request_format} ->
-        {:error, "Invalid request format."}
-
-      {:error, _} ->
-        {:error, "Unknown error #{city}."}
-    end
-  end
+  defp render_response({:error, :network_error}, _city),
+    do: {:error, "Network error"}
 
   defp human_readable_nz_time() do
     %{hour: hour, minute: minute} = DateTime.utc_now()
+    nz_hour = if hour > 11, do: hour - 12, else: hour + 12
 
-    nz_hour =
-      if hour > 11 do
-        hour - 12
-      else
-        hour + 12
-      end
-
-    human_minutes =
-      if minute < 10 do
-        "0#{minute}"
-      else
-        minute
-      end
-
-    "#{nz_hour}:#{human_minutes}"
+    "#{nz_hour}:#{String.pad_leading("#{minute}", 2, "0")}"
   end
 end

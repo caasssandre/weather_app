@@ -1,11 +1,12 @@
 defmodule WeatherApp.Server do
+  @moduledoc """
+  This server receives a call with a city
+  and sends a response containing the temperature to the client every 10 minutes.
+  """
+
   use GenServer
   # @repeat_frequency_in_ms 60_000
   @repeat_frequency_in_ms 20_000
-
-  @moduledoc """
-  This server receives a call with a city and sends a response containing the temperature to the client every 10 minutes
-  """
 
   @spec start_link(name: binary()) :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link(opts) do
@@ -20,11 +21,12 @@ defmodule WeatherApp.Server do
   @impl GenServer
   def init(_opts), do: {:ok, []}
 
+  # handle call uses same name as function above
   @impl GenServer
   def handle_call({:city, city}, {client_pid, _alias}, _state) do
     Process.send(
       client_pid,
-      request_city_temp_and_analyse_response(city),
+      request_temperature(city),
       []
     )
 
@@ -36,7 +38,7 @@ defmodule WeatherApp.Server do
   def handle_info(_, %{client_pid: client_pid, city: city}) do
     Process.send(
       client_pid,
-      request_city_temp_and_analyse_response(city),
+      request_temperature(city),
       []
     )
 
@@ -44,8 +46,7 @@ defmodule WeatherApp.Server do
     {:noreply, %{client_pid: client_pid, city: city}}
   end
 
-  # use mise to load env file ?
-  def request_city_temp_and_analyse_response(city) do
+  defp request_temperature(city) do
     request =
       Finch.build(
         :get,
@@ -56,17 +57,19 @@ defmodule WeatherApp.Server do
           "&contentType=json"
       )
 
+    # URL base in module var, default params into module var as a map
+    # URI module
     with {:ok, %{status: 200, body: body}} <- Finch.request(request, WeatherApp.Finch),
          {:ok, json} <- Jason.decode(body),
-         {:ok, connies} <- Map.fetch(json, "currentConditions"),
-         {:ok, temp} <- Map.fetch(connies, "temp") do
+         {:ok, conditions} <- Map.fetch(json, "currentConditions"),
+         {:ok, temp} <- Map.fetch(conditions, "temp") do
       {:ok, temp}
     else
       {:ok, %{status: _, body: body}} -> {:error, :bad_request, body}
       {:error, :bad_request, reason} -> {:error, :bad_request, reason}
-      {:error, %Mint.HTTPError{}} -> {:error, :invalid_request_format}
+      {:error, %Mint.HTTPError{}} -> {:error, :network_error}
       {:error, %Jason.DecodeError{}} -> {:error, :invalid_json}
-      _ -> {:error, :unknown_error}
+      unknown_error -> IO.inspect(unknown_error)
     end
   end
 end
